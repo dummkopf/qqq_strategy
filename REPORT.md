@@ -253,6 +253,47 @@ alone ahead — which is precisely why the round-trip risk, not just the endpoin
 matters, and why the SMA risk-off rule (which sidesteps the deep drawdowns) adds
 so much value.
 
+### 3g. Same question, but DCA-ing *through* the episode — and now it flips
+
+§3f was a lump-sum *holder*. If instead you **DCA $1,000/month through** each
+QQQ peak→recovery episode, the conclusion inverts, because contributing while
+TQQQ is crashing buys cheap shares that catch the amplified rebound — leverage
+working *for* you. (`src/ath_recovery_dca.py`, `results/ath_recovery_dca.png`)
+
+| QQQ drawdown | # | Median DCA-QQQ | Median DCA-TQQQ | DCA-TQQQ beats DCA-QQQ | (vs lump-sum TQQQ) |
+|---|---:|---:|---:|---:|---:|
+| 0% to −5% | 56 | 1.01× | 1.03× | 93% | +1.8% |
+| −5% to −10% | 11 | 1.03× | 1.07× | 100% | +1.0% |
+| −10% to −20% | 13 | 1.05× | 1.14× | 77% | −1.0% |
+| −20% to −35% | 3 | 1.08× | 1.16× | 100% | −12.8% |
+| deeper than −35% | 2 | 1.91× | **3.60×** | 100% | **−70.9%** |
+
+- **Across all 85 episodes, DCA-TQQQ ended profitable in 94%** (vs the lump-sum
+  holder underwater in 26%) **and beat DCA-QQQ in 92%.**
+- **The relationship reverses:** for the holder, deeper drawdown = worse; for
+  the DCA-er, deeper drawdown = *bigger* TQQQ win. The dot-com round trip
+  (2000→2015, DCA-ing the whole 15 years) returned **5.67× / 20.8%/yr** for
+  DCA-TQQQ vs 2.59× for DCA-QQQ — even though the lump-sum holder was −99%.
+  Real-era: 2021→2023 DCA-TQQQ 1.53× vs QQQ 1.24×; COVID 1.24× vs 1.11×.
+
+**Big caveats — this is the optimistic face of the same coin:**
+1. It is measured **at the recovery** (QQQ back at its high — a favorable
+   moment by construction). Mid-drawdown, DCA-TQQQ is deeply underwater: the
+   endpoint-stress (§3e) showed the *same* contributions worth 0.50× ending at
+   the 2022 trough and portfolio drawdowns of −70% to −90%.
+2. It assumes you **keep buying through the whole crash and never capitulate** —
+   for the dot-com case, 15 years of contributing into a −99% paper loss. That
+   is behaviourally extreme.
+3. It is **conditional on recovery happening within your horizon.** The
+   bootstrap (§3d) showed ~29–34% of resampled 10-yr paths never get there, and
+   DCA-TQQQ ends underwater.
+
+So: **for a disciplined DCA investor who survives to the recovery, leverage's
+round-trip decay largely flips into an accumulation advantage** — the opposite
+of the holder's experience. The risk that remains is sequence/endpoint risk
+(you may need the money, or keep contributing, *before* the recovery), which is
+exactly what the SMA risk-off overlay and position-sizing are for.
+
 ## 4. So — does it make sense?
 
 - **DCA-ing into TQQQ is not a "set and forget" plan.** Its unmanaged 10-year
