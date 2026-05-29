@@ -294,6 +294,42 @@ of the holder's experience. The risk that remains is sequence/endpoint risk
 (you may need the money, or keep contributing, *before* the recovery), which is
 exactly what the SMA risk-off overlay and position-sizing are for.
 
+### 3h. DCA through the episodes, now WITH the SMA-200 overlay
+
+§3g compared *plain* DCA-TQQQ to DCA-QQQ. Adding the SMA-200 risk-off overlay
+(→QQQ or →CASH, 2% band) to the DCA over each recovery episode:
+
+| QQQ drawdown | # | DCA-QQQ | DCA-TQQQ (naked) | +SMA→QQQ | +SMA→CASH | naked DD | SMA DD |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 0% to −5% | 56 | 1.01× | 1.03× | 1.03× | 1.03× | −7% | −7% |
+| −5% to −10% | 11 | 1.03× | 1.07× | 1.07× | 1.07× | −18% | −18% |
+| −10% to −20% | 13 | 1.05× | 1.14× | 1.14× | 1.14× | −27% | −27% |
+| −20% to −35% | 3 | 1.08× | 1.16× | 1.16× | 1.16× | −43% | −43% |
+| deeper than −35% | 2 | 1.91× | **3.60×** | 3.34× | 2.68× | −67% | −58% |
+
+Head-to-head: naked DCA-TQQQ ended **higher in 2** episodes, the overlay higher
+in **0**, and they were **identical in 83**.
+
+Why: most of these episodes are short/shallow, so QQQ never spends long below its
+200-day SMA and the rule **never triggers** — the overlay is just naked
+DCA-TQQQ. It only acts in the long, deep episodes (dot-com, 2022), and there it
+**reduces terminal wealth** (dot-com DCA: 5.67× → 5.27× →QQQ → 4.03× →CASH;
+2021–23: 1.53× → 1.41×) because it sits out the crash and so **forgoes the cheap
+dip-buying** that made DCA-TQQQ win — re-entering only after price reclaims the
+SMA, missing the sharpest part of the rebound. In exchange it cut the deep-case
+drawdown (dot-com −93% → −74%).
+
+**The key reconciliation of the whole study:** conditional on the index
+recovering (these episodes, §3g–3h), *naked* DCA-TQQQ is best — buy the dip in
+3×, don't time it. But the SMA overlay isn't meant to help *those* paths; its
+payoff is in the paths that **don't** recover within your horizon, or where you
+**stop/withdraw before** they do — the catastrophic left tail (§3d Monte Carlo),
+the bad endpoints (§3e), and the lump-sum round-trips (§3f). So the overlay is a
+deliberate trade: **give up some upside on the happy paths to truncate the ruin
+on the unhappy ones.** Whether that trade is worth it depends on how much you
+rely on the money arriving on schedule and on your tolerance for −60%+ equity
+drawdowns.
+
 ## 4. So — does it make sense?
 
 - **DCA-ing into TQQQ is not a "set and forget" plan.** Its unmanaged 10-year

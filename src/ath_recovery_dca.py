@@ -37,7 +37,8 @@ def main():
             continue
         rT = rs.run_one(returns, qqq, dates, aggressive="TQQQ", defensive=None)
         rQ = rs.run_one(returns, qqq, dates, aggressive="QQQ",  defensive=None)
-        # lump-sum holder TQQQ over the same span, for contrast
+        rSQ = rs.run_one(returns, qqq, dates, aggressive="TQQQ", defensive="QQQ",  band=0.02)
+        rSC = rs.run_one(returns, qqq, dates, aggressive="TQQQ", defensive="CASH", band=0.02)
         lump_T = tlvl.loc[dates[-1]] / tlvl.loc[dates[0]] - 1.0
         rows.append(dict(
             peak_date=e["peak_date"], recovery_date=e["recovery_date"], era=e["era"],
@@ -45,7 +46,11 @@ def main():
             invested=rT["invested"],
             dca_qqq_mult=rQ["final"] / rQ["invested"],
             dca_tqqq_mult=rT["final"] / rT["invested"],
-            dca_tqqq_irr=rT["irr"] * 100,
+            dca_tqqq_sma_qqq_mult=rSQ["final"] / rSQ["invested"],
+            dca_tqqq_sma_cash_mult=rSC["final"] / rSC["invested"],
+            dca_tqqq_dd=rT["max_drawdown"] * 100,
+            dca_sma_qqq_dd=rSQ["max_drawdown"] * 100,
+            naked_beats_sma=rT["final"] > rSQ["final"],
             dca_tqqq_better=rT["final"] > rQ["final"],
             dca_tqqq_underwater=rT["final"] < rT["invested"],
             lump_tqqq_rt_pct=lump_T * 100,
@@ -64,20 +69,30 @@ def main():
           f"({d.dca_tqqq_better.mean()*100:.0f}%)")
     print("   (compare lump-sum holder: TQQQ was underwater in ~26% of episodes overall)\n")
 
-    print("By how deep QQQ fell  (DCA buys cheap shares into the dip):")
-    print(f"  {'QQQ drawdown':>16} | {'n':>3} | {'med DCA-QQQ':>11} | {'med DCA-TQQQ':>12} | "
-          f"{'DCA-TQQQ beats QQQ':>18} | {'med lump-sum TQQQ':>17}")
+    naked_win = (d.dca_tqqq_mult > d.dca_tqqq_sma_qqq_mult + 1e-9).sum()
+    sma_win = (d.dca_tqqq_sma_qqq_mult > d.dca_tqqq_mult + 1e-9).sum()
+    tie = n - naked_win - sma_win
+    print(f">>> Naked DCA-TQQQ vs DCA-TQQQ+SMA->QQQ on these recovery episodes: "
+          f"naked higher {naked_win}, SMA higher {sma_win}, identical {tie}")
+    print("    (most episodes are too short/shallow to trip the 200-day signal -> identical;")
+    print("     when the SMA DOES de-risk, it forgoes the cheap dip-buying and ends LOWER)\n")
+
+    print("Median terminal multiple by depth: naked DCA-TQQQ vs the SMA-overlay variants")
+    print(f"  {'QQQ drawdown':>16} | {'n':>3} | {'DCA-QQQ':>8} | {'DCA-TQQQ':>9} | "
+          f"{'+SMA->QQQ':>10} | {'+SMA->CASH':>11} | {'naked DD':>9} | {'SMA DD':>8}")
     for lo, hi in [(-5, 0), (-10, -5), (-20, -10), (-35, -20), (-100, -35)]:
         b = d[(d.depth_pct > lo) & (d.depth_pct <= hi)]
         if len(b) == 0:
             continue
-        print(f"  {hi:>6.0f}% to {lo:>5.0f}% | {len(b):>3} | {b.dca_qqq_mult.median():>10.2f}x | "
-              f"{b.dca_tqqq_mult.median():>11.2f}x | {b.dca_tqqq_better.mean()*100:>16.0f}% | "
-              f"{b.lump_tqqq_rt_pct.median():>16.1f}%")
+        print(f"  {hi:>6.0f}% to {lo:>5.0f}% | {len(b):>3} | {b.dca_qqq_mult.median():>7.2f}x | "
+              f"{b.dca_tqqq_mult.median():>8.2f}x | {b.dca_tqqq_sma_qqq_mult.median():>9.2f}x | "
+              f"{b.dca_tqqq_sma_cash_mult.median():>10.2f}x | {b.dca_tqqq_dd.median():>8.0f}% | "
+              f"{b.dca_sma_qqq_dd.median():>7.0f}%")
 
     print("\nDeepest episodes (DCA through the whole drawdown-and-recovery):")
-    cols = ["peak_date", "recovery_date", "era", "dd_years", "depth_pct",
-            "invested", "dca_qqq_mult", "dca_tqqq_mult", "dca_tqqq_irr", "lump_tqqq_rt_pct"]
+    cols = ["peak_date", "recovery_date", "era", "depth_pct", "dca_qqq_mult",
+            "dca_tqqq_mult", "dca_tqqq_sma_qqq_mult", "dca_tqqq_sma_cash_mult",
+            "dca_tqqq_dd", "dca_sma_qqq_dd"]
     print(d.sort_values("depth_pct").head(10)[cols]
           .to_string(index=False, float_format=lambda x: f"{x:,.2f}"))
     print("\n-> results/ath_recovery_dca.csv")
