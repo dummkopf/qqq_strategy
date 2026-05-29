@@ -1,13 +1,12 @@
 """
-Validate the leveraged-ETF simulation against the REAL TQQQ (2010-02-11 .. 2019-10-04).
+Validate the leveraged-ETF simulation against the REAL funds over their full
+Yahoo history (TQQQ 2010-2026, QLD 2006-2026 -- both include the 2022 bear and
+the 2023-25 high-rate regime, the regimes that matter most).
 
-We fit (expense_ratio, swap_spread) to minimise the difference between the
-simulated and real TQQQ cumulative total return, then report:
-  * daily return correlation
-  * annualised tracking difference (CAGR sim - CAGR real)
-  * annualised tracking error (stdev of daily diff * sqrt(252))
-A good fit justifies using the SAME model to back-fill TQQQ before 2010 and
-QLD before 2006.
+For each fund we grid-fit (expense_ratio, swap_spread) to match cumulative
+total return, and report daily correlation, CAGR difference, and annualised
+tracking error.  A tight fit justifies using the same model to back-fill the
+fund before it existed.
 """
 from __future__ import annotations
 import numpy as np
@@ -15,57 +14,58 @@ import pandas as pd
 import qqqlib as q
 
 
-def metrics(sim: pd.Series, real: pd.Series):
-    j = pd.concat([sim.rename("sim"), real.rename("real")], axis=1).dropna()
-    corr = j["sim"].corr(j["real"])
-    n = len(j)
-    yrs = n / 252.0
-    cagr_sim = (1 + j["sim"]).prod() ** (1 / yrs) - 1
-    cagr_real = (1 + j["real"]).prod() ** (1 / yrs) - 1
-    te = (j["sim"] - j["real"]).std() * np.sqrt(252)
-    return dict(n=n, corr=corr, cagr_sim=cagr_sim, cagr_real=cagr_real,
-                cagr_diff=cagr_sim - cagr_real, tracking_error=te)
+def metrics(sim: pd.Series, real: pd.Series) -> dict:
+    j = pd.concat([sim.rename("s"), real.rename("r")], axis=1).dropna()
+    yrs = len(j) / 252.0
+    return dict(
+        n=len(j),
+        corr=j["s"].corr(j["r"]),
+        cagr_sim=(1 + j["s"]).prod() ** (1 / yrs) - 1,
+        cagr_real=(1 + j["r"]).prod() ** (1 / yrs) - 1,
+        te=(j["s"] - j["r"]).std() * np.sqrt(252),
+        mult_sim=(1 + j["s"]).prod(),
+        mult_real=(1 + j["r"]).prod(),
+    )
+
+
+def fit(qqq, ticker, leverage):
+    real = q.load_real(ticker)
+    base = qqq["tr_ret"].reindex(real.index)
+    best = None
+    for er in np.arange(0.0070, 0.0131, 0.0005):
+        for sp in np.arange(-0.001, 0.0101, 0.0005):
+            sim = q.simulate_letf(base, leverage, er, sp)
+            m = metrics(sim, real["ret"])
+            score = abs(m["cagr_diff"]) if False else abs(m["cagr_sim"] - m["cagr_real"])
+            if best is None or score < best[0]:
+                best = (score, er, sp, m)
+    return best, real
+
+
+def report(name, leverage, best, qqq, real):
+    _, er, sp, m = best
+    print(f"\n=== {name} ({leverage:.0f}x)  validation over {real.index.min().date()} .. {real.index.max().date()} ===")
+    print(f"  best-fit:  expense_ratio={er*100:.2f}%/yr  swap_spread={sp*100:+.2f}%/yr")
+    print(f"  daily-return correlation : {m['corr']:.5f}")
+    print(f"  simulated CAGR           : {m['cagr_sim']*100:7.2f}%")
+    print(f"  real      CAGR           : {m['cagr_real']*100:7.2f}%")
+    print(f"  CAGR difference          : {(m['cagr_sim']-m['cagr_real'])*100:+7.2f}%/yr")
+    print(f"  annualised tracking error: {m['te']*100:7.2f}%")
+    print(f"  total growth multiple    : sim {m['mult_sim']:8.1f}x   real {m['mult_real']:8.1f}x")
+    # reference with the params hard-coded in qqqlib.CALIB
+    cp = q.CALIB[name]
+    sim_c = q.simulate_letf(qqq["tr_ret"].reindex(real.index), leverage, cp["expense_ratio"], cp["swap_spread"])
+    mc = metrics(sim_c, real["ret"])
+    print(f"  [CALIB ER={cp['expense_ratio']*100:.2f}% sp={cp['swap_spread']*100:.2f}%] "
+          f"corr {mc['corr']:.5f}  CAGR diff {(mc['cagr_sim']-mc['cagr_real'])*100:+.2f}%/yr  TE {mc['te']*100:.2f}%")
 
 
 def main():
     qqq = q.load_qqq()
-    real = q.load_real_tqqq()
-    lo, hi = real.index.min(), real.index.max()
-    pr = qqq.loc[lo:hi, "price_ret"]
-    real_ret = real.loc[lo:hi, "ret"]
-
-    # grid-search expense_ratio + swap_spread to best match cumulative return
-    best = None
-    for er in np.arange(0.0070, 0.0131, 0.0005):
-        for sp in np.arange(0.0, 0.0081, 0.0010):
-            sim = q.simulate_letf(pr, 3.0, er, sp)
-            m = metrics(sim, real_ret)
-            score = abs(m["cagr_diff"])
-            if best is None or score < best[0]:
-                best = (score, er, sp, m)
-    _, er, sp, m = best
-    print("=== TQQQ simulation validation (2010-02-11 .. 2019-10-04) ===")
-    print(f"best-fit expense_ratio = {er*100:.2f}%/yr, swap_spread = {sp*100:.2f}%/yr")
-    print(f"daily-return correlation : {m['corr']:.5f}")
-    print(f"sim  CAGR                 : {m['cagr_sim']*100:7.2f}%")
-    print(f"real CAGR                 : {m['cagr_real']*100:7.2f}%")
-    print(f"CAGR difference           : {m['cagr_diff']*100:7.2f}%/yr")
-    print(f"annualised tracking error : {m['tracking_error']*100:7.2f}%")
-
-    # also report a "round-number published" parameterisation for reference
-    sim_pub = q.simulate_letf(pr, 3.0, 0.0095, 0.0040)
-    mp = metrics(sim_pub, real_ret)
-    print("\n--- reference (ER=0.95%, spread=0.40%) ---")
-    print(f"corr {mp['corr']:.5f} | sim CAGR {mp['cagr_sim']*100:.2f}% | "
-          f"real {mp['cagr_real']*100:.2f}% | diff {mp['cagr_diff']*100:.2f}%/yr | "
-          f"TE {mp['tracking_error']*100:.2f}%")
-
-    # cumulative levels endpoint check
-    lvl_sim = q.levels_from_returns(sim_pub)
-    lvl_real = q.levels_from_returns(real_ret)
-    print(f"\nEndpoint multiple over period: sim {lvl_sim.iloc[-1]/100:.2f}x  "
-          f"real {lvl_real.iloc[-1]/100:.2f}x")
-    return er, sp
+    bt, rt = fit(qqq, "TQQQ", 3.0)
+    report("TQQQ", 3.0, bt, qqq, rt)
+    bq, rq = fit(qqq, "QLD", 2.0)
+    report("QLD", 2.0, bq, qqq, rq)
 
 
 if __name__ == "__main__":
