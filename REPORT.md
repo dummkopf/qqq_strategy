@@ -173,6 +173,41 @@ What this reveals:
 > overlap (§3a–3c) and this more pessimistic resampled view. Treat the bootstrap
 > as the downside-realistic bookend, not gospel.
 
+### 3e. End-point stress — measuring at troughs, not today's high
+
+Everything in §3a–3c and the lookback table ends at the May-2026 high, which
+flatters TQQQ. The symmetric test: run the same horizons **ending at market
+troughs** (dot-com 2002-10, GFC 2009-03, 2022 bear 2022-12). $1,000/mo DCA;
+format = terminal multiple / IRR / max drawdown. (`src/endpoint_stress.py`)
+
+| End / horizon | DCA QQQ | DCA TQQQ (naked) | TQQQ+SMA→CASH | TQQQ+SMA→QQQ |
+|---|---|---|---|---|
+| **2002-10, 3yr** | 0.44× / −48% | **0.11× / −96% / −91%DD** | **0.67× / −25%** | 0.35× / −59% |
+| **2009-03, 5yr** | 0.65× / −17% | **0.15× / −75% / −92%DD** | **0.77× / −10%** | 0.50× / −27% |
+| **2009-03, 7yr** | 0.73× / −9% | **0.16× / −60% / −93%DD** | **0.79× / −7%** | 0.53× / −18% |
+| **2022-12, 3yr** | 0.90× / −6% | **0.50× / −39% / −73%DD** | **1.53× / +29%** | 1.15× / +9% |
+| **2022-12, 5yr** | 1.15× / +6% | 0.77× / −10% / −79%DD | **1.99× / +27%** | 1.70× / +21% |
+| **2022-12, 7yr** | 1.46× / +11% | 1.38× / +9% / −81%DD | **3.27× / +33%** | 2.97× / +30% |
+| **2022-12, 10yr** | 1.98× / +13% | 3.06× / +21% / −81%DD | 4.79× / +29% | **5.13× / +31%** |
+| **2022-12, 15yr** | 3.41× / +15% | 12.83× / +30% / −82%DD | 8.86× / +26% | **12.78× / +30% / −66%DD** |
+
+The verdict on fragility:
+- **Naked TQQQ DCA is extremely end-point-fragile.** A 10-year DCA ending at the
+  Feb-2020 peak returned **15.8×**; the *same strategy* ending at the Dec-2022
+  trough returned **3.1×**. Where you stop swings the outcome 5-fold. At the
+  2002/2009 troughs it was a near-total wipeout (0.11–0.16×).
+- **The overlay is dramatically more end-point-robust.** Ending at *every*
+  trough, TQQQ+SMA→CASH landed between roughly flat and **+33%/yr**, and beat
+  plain QQQ DCA at all three troughs — because by construction a 200-day-SMA
+  rule has you *out* of TQQQ at a market bottom. The same 10yr-to-2020 vs
+  -to-2022 comparison for SMA→QQQ is 8.4× vs 5.1× — a far tighter spread than
+  naked TQQQ's 15.8× vs 3.1×.
+- **This is the cleanest case for the rule.** The two endpoint extremes flatter
+  opposite strategies (today's high → naked TQQQ; troughs → the overlay), but
+  the overlay's *worst* outcomes are vastly better than naked TQQQ's worst
+  outcomes. Reducing how much your decade-long result depends on the luck of
+  your end date is exactly what a risk-off rule should buy you.
+
 ## 4. So — does it make sense?
 
 - **DCA-ing into TQQQ is not a "set and forget" plan.** Its unmanaged 10-year
