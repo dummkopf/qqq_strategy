@@ -208,6 +208,51 @@ The verdict on fragility:
   outcomes. Reducing how much your decade-long result depends on the luck of
   your end date is exactly what a risk-off rule should buy you.
 
+### 3f. "If QQQ rehits its old high, isn't a TQQQ holder also whole?" — No.
+
+A common belief is that leverage is safe to hold as long as the index eventually
+recovers its prior high. This is **false** because of volatility decay: TQQQ
+delivers 3× the *daily* return, not 3× the *cumulative* return. Over any
+drawdown-and-recovery round trip — where QQQ nets ~0% — TQQQ ends **down**.
+
+I found every QQQ all-time-high that was later recovered (85 episodes ≥1% deep,
+total-return basis) and measured TQQQ over the exact same span.
+(`src/ath_recovery.py`, `results/ath_recovery_scatter.png`)
+
+**It depends entirely on how deep the drawdown was:**
+
+| QQQ drawdown in the episode | # episodes | Median TQQQ over the round trip | % where TQQQ still down |
+|---|---:|---:|---:|
+| 0% to −5% | 56 | +1.8% | 12% |
+| −5% to −10% | 11 | +1.0% | 18% |
+| −10% to −20% | 13 | −1.0% | 62% |
+| −20% to −35% | 3 | −12.8% | **100%** |
+| deeper than −35% | 2 | −70.9% | **100%** |
+
+There's a clear threshold around a **−10% to −15% QQQ drawdown**: shallower than
+that, when QQQ gets back to its high the TQQQ holder is usually fine (leverage
+even helps); deeper than that, **recovering the index does NOT make the TQQQ
+holder whole.** Real-era (2010+) examples, all with QQQ back to flat:
+
+| Peak → recovery | QQQ drawdown | TQQQ over same span |
+|---|---:|---:|
+| 2021-12 → 2023-12 | −35% | **−43%** |
+| 2020-02 → 2020-06 (COVID) | −28% | **−24%** |
+| 2018-08 → 2019-04 | −22% | −10% |
+| 2025-02 → 2025-06 | −23% | −13% |
+
+And the extreme: a holder from the **2000 dot-com peak** is still **down ~65%**
+today even though QQQ is up **+641%** — the −99.9% crash is mathematically
+near-impossible to recover from (a −99% loss needs +9,900% just to break even).
+*(2000-era TQQQ is simulated, but the principle is exact and the real 2022 case
+makes the same point.)*
+
+**Answer to the question:** only for shallow (<~10%) dips. For any real bear,
+"QQQ got back to its high" does **not** imply the TQQQ holder is whole, let
+alone ahead — which is precisely why the round-trip risk, not just the endpoint,
+matters, and why the SMA risk-off rule (which sidesteps the deep drawdowns) adds
+so much value.
+
 ## 4. So — does it make sense?
 
 - **DCA-ing into TQQQ is not a "set and forget" plan.** Its unmanaged 10-year
