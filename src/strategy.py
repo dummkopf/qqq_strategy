@@ -65,7 +65,8 @@ def run_dca(returns: dict[str, pd.Series],
             band: float = 0.0,
             qqq_price: pd.Series | None = None,
             switch_cost_bps: float = 5.0,
-            cash_rate: pd.Series | None = None) -> dict:
+            cash_rate: pd.Series | None = None,
+            contrib_end=None) -> dict:
     """Run one DCA strategy over `dates`.
 
     returns   : {asset_name: daily total-return series} covering `dates`
@@ -81,6 +82,9 @@ def run_dca(returns: dict[str, pd.Series],
         state = pd.Series(True, index=dates)
 
     contrib_days = set(pd.DatetimeIndex(_month_first_trading_days(dates)))
+    if contrib_end is not None:                 # stop contributing after this date
+        ce = pd.Timestamp(contrib_end)
+        contrib_days = {d for d in contrib_days if d <= ce}
     sc = switch_cost_bps / 1e4
 
     agg_ret = returns[aggressive].reindex(dates).fillna(0.0)
