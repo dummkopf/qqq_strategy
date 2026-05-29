@@ -2,6 +2,16 @@
 
 *Independent backtest validation. Generated 2026-05-29.*
 
+> **Important update (Monte Carlo, §3d).** The rosy historical numbers below are
+> heavily flattered by QQQ's *specific* return sequence. When the same daily
+> returns are block-resampled into 2,000 alternative 10-year paths, naked
+> TQQQ DCA beats plain QQQ DCA only **49%** of the time (not 83%) and has a
+> *lower* median terminal multiple than QQQ, with **34% of paths losing money**
+> and a 1-in-9 near-total wipeout. The SMA overlay still helps under resampling
+> (and is not curve-fit to QQQ's path), but the honest takeaway is stronger:
+> **leveraged DCA is a high-variance barbell, and the historical record
+> overstates the edge.** Read §3d before acting on §3a–3c.
+
 **TL;DR.** Dollar-cost-averaging into TQQQ has a **high median outcome but a
 catastrophic left tail**. Across every 10-year window since QQQ's 1999
 inception, plain buy-and-hold DCA into TQQQ delivered a median money-weighted
@@ -118,6 +128,51 @@ Your instinct is right: a **~2–3% band cuts the number of switches by ~70%**
 in fact, because it dodges whipsaws. Below the line you mostly trade fewer
 times; above ~5% you start reacting too late.
 
+### 3d. Monte Carlo — block-bootstrap robustness (the objectivity check)
+
+The 207 rolling windows above overlap massively — they're really only a handful
+of independent decades, all drawn from the one path history actually took. To
+test whether the conclusion survives *different sequencing* of the same kind of
+returns, I block-bootstrapped QQQ's daily returns (stationary bootstrap, mean
+block ~2 months, so volatility clustering and short trends survive) into
+**2,000 synthetic 10-year paths** and DCA'd through each. (`src/monte_carlo.py`)
+
+| Strategy | Median IRR | IRR p5 | IRR p95 | 5% CVaR (mean of worst 5% IRR) | Median multiple | mult p5 | P(lose money) | Worst-1% drawdown |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| QQQ B&H | 12.4% | −5.0% | 28.5% | −10.5% | 1.86× | 0.79× | 10.7% | −68% |
+| TQQQ B&H | 11.7% | **−41.2%** | **67.2%** | **−57.4%** | 1.79× | **0.19×** | **34.2%** | **−99%** |
+| TQQQ + SMA→QQQ | 12.0% | −22.3% | 58.7% | −30.7% | 1.82× | 0.37× | 29.1% | −91% |
+| TQQQ + SMA→CASH | 8.8% | −24.8% | 53.4% | −33.0% | 1.55× | 0.34× | 34.2% | −92% |
+
+**Win rates (by terminal multiple):** TQQQ B&H beats QQQ B&H **49.0%**;
+TQQQ+SMA→QQQ beats QQQ B&H **51.8%** and beats TQQQ B&H **51.6%**.
+
+What this reveals:
+- **QQQ's history was lucky for leverage.** The historical 82% win rate and ~6×
+  median for naked TQQQ collapse to a **coin flip (49%)** and a median multiple
+  *below* QQQ once you reshuffle the sequence. Leverage thrives on persistent
+  trends and sharp V-recoveries — QQQ's actual path had those in abundance;
+  most resampled paths don't.
+- **Naked TQQQ DCA is a barbell/lottery** (see `results/mc_terminal_dist.png`):
+  a big spike near total loss (p5 = 0.19× invested, worst-1% drawdown −99%) and
+  a fat right tail (p95 IRR 67%). High *mean*, mediocre *median*, 34% of paths
+  underwater. The typical outcome is not riches.
+- **The SMA overlay's benefit is real and not curve-fit:** even under
+  resampling it lifts the median multiple above naked TQQQ, beats it 51.6% of
+  the time, and shaves the worst-5% IRR from −57% to −31% and wipe-out
+  probability (p5 0.19×→0.37×). The IRR CDF (`results/mc_irr_cdf.png`) shows the
+  overlay's whole left tail sitting to the right of naked TQQQ's.
+- **But leverage stays genuinely risky:** ~29% of overlay paths still lose money
+  over 10 years and the worst drawdowns are ~−91%. The overlay reduces the tail;
+  it does not remove it.
+
+> Caveat on the method: block bootstrap *breaks* multi-year secular trends and
+> mean-reversion. That cuts both ways — it removes the secular tailwind that
+> made QQQ B&H look great, *and* it handicaps the SMA rule (which feeds on
+> persistent trends). Reality likely sits **between** the flattering historical
+> overlap (§3a–3c) and this more pessimistic resampled view. Treat the bootstrap
+> as the downside-realistic bookend, not gospel.
+
 ## 4. So — does it make sense?
 
 - **DCA-ing into TQQQ is not a "set and forget" plan.** Its unmanaged 10-year
@@ -125,8 +180,13 @@ times; above ~5% you start reacting too late.
   drawdown). The bad cases aren't tail-of-the-tail flukes — ~1 in 10 windows
   ended underwater, and anyone who started near the 1999 or (to a lesser extent)
   2021 peak got destroyed. Leverage decay + sequence risk are real.
+- **Most of TQQQ's historical "edge" was QQQ's lucky sequencing.** Under
+  resampling (§3d) naked TQQQ is a coin-flip vs QQQ with a *lower* median and a
+  34% chance of losing money over a decade. Don't bank on repeating the
+  1999-or-2010-to-today path; size the position for the barbell, not the median.
 - **The SMA-200 risk-off overlay materially de-risks it** and is the single
-  most important thing in this study. It turns the worst-case from "wiped out"
+  most important thing in this study — and, reassuringly, it still helps under
+  resampling (so it isn't curve-fit to QQQ's one history). It turns the worst-case from "wiped out"
   to "roughly flat," keeps ~90% of the median return, and historically beat a
   plain QQQ DCA in ~83% of decades.
 - **Defensive asset choice is a risk dial:** →CASH = most conservative (best

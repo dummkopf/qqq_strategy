@@ -33,3 +33,12 @@ python src/run_study.py
 The SMA-200 overlay is **tail insurance**: it gives up a little median return to
 remove most of the catastrophic left tail. See the report for caveats (taxes,
 behaviour, regime dependence).
+
+### Robustness check (block-bootstrap Monte Carlo, `src/monte_carlo.py`)
+The historical win rates are flattered by QQQ's specific return sequence. Across
+2,000 resampled 10-yr paths, naked TQQQ DCA beats QQQ DCA only **49%** of the
+time (vs 83% historically) with a *lower* median multiple and a **34% chance of
+losing money**; 1-in-9 paths near-total wipeout. The SMA overlay still helps
+under resampling (beats naked TQQQ 51.6%, halves the worst-5% loss) — it's not
+curve-fit — but leveraged DCA remains a high-variance barbell. See
+`results/mc_terminal_dist.png`, `mc_irr_cdf.png`, `montecarlo_summary.csv`.
